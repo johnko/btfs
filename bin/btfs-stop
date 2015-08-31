@@ -1,0 +1,5 @@
+#!/bin/sh
+
+MPOINT=/usr/home/btfs/btfs
+
+umount ${MPOINT}
