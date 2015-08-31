@@ -1,7 +1,6 @@
 #!/usr/bin/env python2.7
 __credits__ = """Copyright (c) 2011 Roman Beslik <rabeslik@gmail.com>
 Copyright (c) 2011 eurekafag <eurekafag@eureka7.ru>
-Copyright (c) 2015 John Ko <git@johnko.ca>
 Licensed under GNU LGPL 2.1 or later.  See <http://www.fsf.org/>.
 
 This library is free software; you can redistribute it and/or
@@ -591,7 +590,6 @@ def main_torrent_descr(options, th):
 		fs = BTFS(dash_s_do='setsingle')
 		fs.parse(errex=1)
 		fs.multithreaded = 1
-		fs.allow_other = True
 		fs.options = options
 		fs.main()
 
