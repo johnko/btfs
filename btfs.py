@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 __credits__ = """Copyright (c) 2011 Roman Beslik <rabeslik@gmail.com>
 Copyright (c) 2011 eurekafag <eurekafag@eureka7.ru>
 Licensed under GNU LGPL 2.1 or later.  See <http://www.fsf.org/>.
@@ -90,7 +90,7 @@ class piece_server(object):
 		self.lock.acquire()
 		try:
 			p1 = min(self.torrent_info.num_pieces(), piece+self.piece_par.data)
-			
+
 			#deadline = 0
 			#for pa in range(piece, p1):
 			#	self.torrent_handle.set_piece_deadline(pa, deadline, 0)
@@ -101,7 +101,7 @@ class piece_server(object):
 				self.torrent_handle.piece_priority(pa, prio)
 				if prio > 1:
 					prio -= 1
-			
+
 			logger.debug("downloading of the pieces ["+str(piece)+", "+str(p1)+"] is turned on")
 			self.array.append((event, channel, piece))
 			self.torrent_handle.set_piece_deadline(piece, 0, libtorrent.deadline_flags.alert_when_available)
@@ -118,57 +118,56 @@ class alert_client(threading.Thread):
 		super(alert_client, self).__init__()
 		self.daemon = True
 	def run(self):
-  	  try:
-		logger = logging.getLogger("root")
-		self.torrent_session.set_alert_mask(libtorrent.alert.category_t.storage_notification + libtorrent.alert.category_t.status_notification)
-		while(True):
-			self.torrent_session.wait_for_alert(1000)
-			a = self.torrent_session.pop_alert()
-			if (type(a) == libtorrent.read_piece_alert):
-				logger.info("the piece "+str(a.piece)+" is received")
-				self.piece_server.push(a)
-			if (type(a) in [libtorrent.save_resume_data_alert, libtorrent.save_resume_data_failed_alert]
-				and not (self.resume_alert is None)):
-				self.resume_alert.push(a)
-			if (type(a) == libtorrent.fastresume_rejected_alert):
-				logger.info("resume data is rejected"
-					# " because \""+str(a.error.message())+"\" (error code="+str(a.error.value())+")")
-					)
+		try:
+			logger = logging.getLogger("root")
+			self.torrent_session.set_alert_mask(libtorrent.alert.category_t.storage_notification + libtorrent.alert.category_t.status_notification)
+			while(True):
+				self.torrent_session.wait_for_alert(1000)
+				a = self.torrent_session.pop_alert()
+				if (type(a) == libtorrent.read_piece_alert):
+					logger.info("the piece "+str(a.piece)+" is received")
+					self.piece_server.push(a)
+				if (type(a) in [libtorrent.save_resume_data_alert, libtorrent.save_resume_data_failed_alert]
+					and not (self.resume_alert is None)):
+					self.resume_alert.push(a)
+				if (type(a) == libtorrent.fastresume_rejected_alert):
+					logger.info("resume data is rejected"
+						# " because \""+str(a.error.message())+"\" (error code="+str(a.error.value())+")")
+						)
+		except:
+			logger = logging.getLogger("root")
+			logger.critical(str("".join(traceback.format_exception(*sys.exc_info()))))
 
-	  except:
-		  logger = logging.getLogger("root")
-		  logger.critical(str("".join(traceback.format_exception(*sys.exc_info()))))
-		  
 class torrent_file_bt2p(object):
 	def write(self, size, offset):
-           try:
-		logger = logging.getLogger("root")
-		request_done = False
-		last = offset + size - 1
-		result = ""
-		while (not(request_done)):
-			piece_slice = self.map_file(offset)
-			logger.info("the piece "+str(piece_slice.piece)+" is requested")
-			data = self.piece_server.pop(piece_slice.piece)
-			if data is None:
-				logger.warning("pop_piece() is None for the piece "+str(piece_slice.piece))
-				request_done = True
-			else:
-				available_length = last - offset + 1
-				end = piece_slice.start + available_length
-				if (end >= len(data)):
-					end = len(data)
-					available_length = len(data) - piece_slice.start
-				logger.debug("writing the data=(piece="+str(piece_slice.piece) \
-					+", interval=["+str(piece_slice.start)+", "+str(end)+"))")
-				result += data[piece_slice.start:end]
-				logger.debug("the data is written")
-				offset += available_length
-				request_done = offset > last
-		return result
-	   except:
-		   logger = logging.getLogger("root")
-		   logger.critical(str("".join(traceback.format_exception(*sys.exc_info()))))
+		try:
+			logger = logging.getLogger("root")
+			request_done = False
+			last = offset + size - 1
+			result = ""
+			while (not(request_done)):
+				piece_slice = self.map_file(offset)
+				logger.info("the piece "+str(piece_slice.piece)+" is requested")
+				data = self.piece_server.pop(piece_slice.piece)
+				if data is None:
+					logger.warning("pop_piece() is None for the piece "+str(piece_slice.piece))
+					request_done = True
+				else:
+					available_length = last - offset + 1
+					end = piece_slice.start + available_length
+					if (end >= len(data)):
+						end = len(data)
+						available_length = len(data) - piece_slice.start
+					logger.debug("writing the data=(piece="+str(piece_slice.piece) \
+						+", interval=["+str(piece_slice.start)+", "+str(end)+"))")
+					result += data[piece_slice.start:end]
+					logger.debug("the data is written")
+					offset += available_length
+					request_done = offset > last
+			return result
+		except:
+			logger = logging.getLogger("root")
+			logger.critical(str("".join(traceback.format_exception(*sys.exc_info()))))
 
 class torrent_read_bt2p(object):
 	def init(self):
@@ -277,113 +276,113 @@ class BTFS(fuse.Fuse):
 		fuse.Fuse.__init__(self, *args, **kw)
 
 	def fsinit(self):
-               try:
-                if not hasattr(self, "torrent_handle"):
-			if "resume" in self.options:
-				resume = self.options["resume"]
-			else:
-				resume = None
-			resume_data = main_resume(resume)
-	
-			if "resume" in self.options:
-				def f():
-					self.logger.debug("shutting down with a resume")
-					torrent_session.pause()
-					rs.save(True)
-				
-			self.torrent_session = libtorrent.session()
-			self.torrent_session.add_dht_router("router.utorrent.com", 6881)
-			sp = libtorrent.session_settings()
-			sp.request_timeout /= 10 # configuration
-			sp.piece_timeout /= 10 # configuration
-			sp.peer_timeout /= 20 # configuration
-			sp.inactivity_timeout /= 20 # configuration
-			self.torrent_session.set_settings(sp)
-			self.torrent_session.listen_on(self.options["port"], self.options["port"] + 100)
+		try:
+			if not hasattr(self, "torrent_handle"):
+				if "resume" in self.options:
+					resume = self.options["resume"]
+				else:
+					resume = None
+				resume_data = main_resume(resume)
 
-			torrent_descr = {"storage_mode": libtorrent.storage_mode_t.storage_mode_allocate
-					 , "save_path": self.options["save-path"]
-					 }
-			if not (resume_data is None):
-				torrent_descr["resume_data"] = resume_data
-			
-			if "hash-file" in self.options:
-				e = libtorrent.bdecode(io.open(self.options["hash-file"], 'rb').read())
-				self.torrent_info = libtorrent.torrent_info(e)
-				torrent_descr["ti"] = self.torrent_info
+				if "resume" in self.options:
+					def f():
+						self.logger.debug("shutting down with a resume")
+						torrent_session.pause()
+						rs.save(True)
+
+				self.torrent_session = libtorrent.session()
+				self.torrent_session.add_dht_router("router.utorrent.com", 6881)
+				sp = libtorrent.session_settings()
+				sp.request_timeout /= 10 # configuration
+				sp.piece_timeout /= 10 # configuration
+				sp.peer_timeout /= 20 # configuration
+				sp.inactivity_timeout /= 20 # configuration
+				self.torrent_session.set_settings(sp)
+				self.torrent_session.listen_on(self.options["port"], self.options["port"] + 100)
+
+				torrent_descr = {"storage_mode": libtorrent.storage_mode_t.storage_mode_allocate
+						 , "save_path": self.options["save-path"]
+						 }
 				if not (resume_data is None):
 					torrent_descr["resume_data"] = resume_data
-				self.logger.debug("the torrent description: "+str(torrent_descr))
-				self.torrent_handle = self.torrent_session.add_torrent(torrent_descr)
-				self.logger.debug("the torrent handle "+str(self.torrent_handle)+" is created")
-			
-			if "magnet" in self.options:
-				try:
-					self.torrent_handle = libtorrent.add_magnet_uri(self.torrent_session, self.options["magnet"], torrent_descr)
-					if not self.torrent_handle.is_valid():
-						raise
-					
-					self.torrent_info = 0
-					self.logger.debug("the torrent handle "+str(self.torrent_handle)+" is created")
-					self.logger.debug("the magnet %s added" % self.options["magnet"])
-					return
-				except:
-					self.logger.critical("error parsing magnet link.")
-					raise
-	
-		self.torrent_info = self.torrent_handle.get_torrent_info()
-		piece_par_ref0 = reference()
-		piece_par_ref0.data = self.options["piece-par"]
-		
-		piece_server0 = piece_server()
-		piece_server0.torrent_handle = self.torrent_handle
-		piece_server0.torrent_info = self.torrent_info
-		piece_server0.piece_par = piece_par_ref0
-		piece_server0.defprio = self.options["defprio"]
-		piece_server0.init()
 
-		alert_client0 = alert_client()
-		alert_client0.torrent_session = self.torrent_session
-		alert_client0.piece_server = piece_server0
-		if "resume" in self.options:
-			ra = resume_alert()
-			ra.torrent_handle = self.torrent_handle
-			
-			rs = resume_save()
-			rs.file_name = self.options["resume"]
-			rs.resume_alert = ra
-		
-			rt = resume_timer()
-			rt.resume_save = rs
-			rt.start()
-		
-			alert_client0.resume_alert = ra
-		else:
-			alert_client0.resume_alert = None
-	
-		alert_client0.start()
-		r = torrent_read_bt2p()
-		r.torrent_handle = self.torrent_handle
-		r.torrent_info = self.torrent_info
-		r.piece_server = piece_server0
-		r.init()
-		self.torrent = r
-		self.piece_server = piece_server0
-		self.parsebttree()
-		self.torrent_handle.force_recheck()
-	       except SystemExit:
-		       raise
-               except:
-		     logging.critical(str("".join(traceback.format_exception(*sys.exc_info()))))
-			
+				if "hash-file" in self.options:
+					e = libtorrent.bdecode(io.open(self.options["hash-file"], 'rb').read())
+					self.torrent_info = libtorrent.torrent_info(e)
+					torrent_descr["ti"] = self.torrent_info
+					if not (resume_data is None):
+						torrent_descr["resume_data"] = resume_data
+					self.logger.debug("the torrent description: "+str(torrent_descr))
+					self.torrent_handle = self.torrent_session.add_torrent(torrent_descr)
+					self.logger.debug("the torrent handle "+str(self.torrent_handle)+" is created")
+
+				if "magnet" in self.options:
+					try:
+						self.torrent_handle = libtorrent.add_magnet_uri(self.torrent_session, self.options["magnet"], torrent_descr)
+						if not self.torrent_handle.is_valid():
+							raise
+
+						self.torrent_info = 0
+						self.logger.debug("the torrent handle "+str(self.torrent_handle)+" is created")
+						self.logger.debug("the magnet %s added" % self.options["magnet"])
+						return
+					except:
+						self.logger.critical("error parsing magnet link.")
+						raise
+
+			self.torrent_info = self.torrent_handle.get_torrent_info()
+			piece_par_ref0 = reference()
+			piece_par_ref0.data = self.options["piece-par"]
+
+			piece_server0 = piece_server()
+			piece_server0.torrent_handle = self.torrent_handle
+			piece_server0.torrent_info = self.torrent_info
+			piece_server0.piece_par = piece_par_ref0
+			piece_server0.defprio = self.options["defprio"]
+			piece_server0.init()
+
+			alert_client0 = alert_client()
+			alert_client0.torrent_session = self.torrent_session
+			alert_client0.piece_server = piece_server0
+			if "resume" in self.options:
+				ra = resume_alert()
+				ra.torrent_handle = self.torrent_handle
+
+				rs = resume_save()
+				rs.file_name = self.options["resume"]
+				rs.resume_alert = ra
+
+				rt = resume_timer()
+				rt.resume_save = rs
+				rt.start()
+
+				alert_client0.resume_alert = ra
+			else:
+				alert_client0.resume_alert = None
+
+			alert_client0.start()
+			r = torrent_read_bt2p()
+			r.torrent_handle = self.torrent_handle
+			r.torrent_info = self.torrent_info
+			r.piece_server = piece_server0
+			r.init()
+			self.torrent = r
+			self.piece_server = piece_server0
+			self.parsebttree()
+			self.torrent_handle.force_recheck()
+		except SystemExit:
+			raise
+		except:
+			logging.critical(str("".join(traceback.format_exception(*sys.exc_info()))))
+
 	def parsebttree(self):
 		class btentry(dict):
 			pass
 
 		if not self.torrent_info:
 			return
-		
-		self.files = btentry() # struct: "filedirname1": { ... }, "filedirname1": true,  .mode: mode, .size: size
+
+		self.files = btentry() # struct: "filedirname1": { ... }, "filedirname1": true, .mode: mode, .size: size
 		for f in self.torrent_info.files():
 			filename = f.path
 			if f.path.startswith(self.torrent_info.name() + "/"):
@@ -405,15 +404,15 @@ class BTFS(fuse.Fuse):
 						curfile[pathpart] = btentry()
 						curfile[pathpart].mode = stat.S_IFDIR | 0755
 						curfile[pathpart].size = 4096
-						
+
 					curfile = curfile[pathpart]
 				partnum += 1
 
 	def getbtdirlist(self, path):
-		
+
 		if not self.torrent_info:
 			return
-		
+
 		dirlist = []
 		plainlist = []
 		if path == "/":
@@ -433,7 +432,7 @@ class BTFS(fuse.Fuse):
 
 			if contents:
 				del splitpath[-1]
-				
+
 			for pathpart in splitpath:
 				if pathpart in curfile:
 					curfile = curfile[pathpart]
@@ -463,7 +462,7 @@ class BTFS(fuse.Fuse):
 					return st
 				else:
 					self.fsinit()
-					
+
 			tailpath = path[1:].split("/", 2)
 			self.logger.debug("Getattr:" + path + " " + str(tailpath))
 			if len(tailpath) > 1:
@@ -477,7 +476,7 @@ class BTFS(fuse.Fuse):
 				st.st_nlink = 1
 				st.st_size = btfile[0]["size"]
 			return st
-                except:
+		except:
 			logging.critical(str("".join(traceback.format_exception(*sys.exc_info()))))
 
 	def readdir(self, path, offset):
@@ -492,18 +491,18 @@ class BTFS(fuse.Fuse):
 					return
 				else:
 					self.fsinit()
-						
+
 			self.logger.debug("Path: " + path)
 			if path != "/":
 				path += "/"
 			dirlist = self.getbtdirlist(path)
-			
+
 			dirents.extend(dirlist[1])
 			self.logger.debug("Dirents: " + unicode(dirents))
-				
+
 			for r in dirents:
 				yield fuse.Direntry(r)
-                except:
+		except:
 			self.logger.critical(str("".join(traceback.format_exception(*sys.exc_info()))))
 
 
@@ -513,14 +512,14 @@ class BTFS(fuse.Fuse):
 			return 0
 		if offset + size > file_size:
 			size = file_size - offset
-			
+
 		return torrent_file.write(size, offset)
-			
+
 	def read(self, path, size, offset):
 		try:
 			if not self.torrent_info:
 				return
-			
+
 			torrent_file = self.torrent.find_file(path[1:])
 			if not torrent_file:
 				self.logger.debug("Read404_1: " + path[1:])
@@ -530,11 +529,11 @@ class BTFS(fuse.Fuse):
 					torrent_file = self.torrent.find_file(split_torrent_name[1])
 					if not torrent_file:
 						return -errno.ENOENT
-					
+
 			self.logger.debug("Read: " + unicode(torrent_file.size) + " " + unicode(offset) + "+" + unicode(size))
 			data = self.read_from_torrent(torrent_file, size, offset)
 			return data
-                except:
+		except:
 			self.logger.critical(str("".join(traceback.format_exception(*sys.exc_info()))))
 
 def main_resume(resume):
@@ -574,7 +573,7 @@ def main_default(options):
 	if not ("piece-par" in options):
 		options["piece-par"] = 2**3 # configuration
 	if not ("hash-file" in options) and not ("magnet" in options):
-		error_exit(225,  "\"-f\" or \"-m\" is mandatory")
+		error_exit(225, "\"-f\" or \"-m\" is mandatory")
 	if not ("save-path" in options):
 		error_exit(226, "\"-s\" is mandatory")
 	if not ("defprio" in options):
@@ -585,7 +584,7 @@ def main_torrent_descr(options, th):
 	def f():
 		logger.debug("shutting down without a resume")
 	th.save_resume = f
-	
+
 	main_default(options)
 	try:
 		fs = BTFS(dash_s_do='setsingle')
@@ -593,7 +592,7 @@ def main_torrent_descr(options, th):
 		fs.multithreaded = 1
 		fs.options = options
 		fs.main()
-		
+
 	except KeyboardInterrupt:
 		th.do()
 
@@ -603,7 +602,7 @@ def main_options(options, l, th):
 
 def expandpath(path):
 	return os.path.abspath(os.path.expandvars(os.path.expanduser(path)))
-	
+
 def main(argv=None):
 	th = term_handler()
 	signal.signal(signal.SIGTERM, th.hdo)
@@ -644,7 +643,7 @@ def main(argv=None):
 			error_exit(223, "an unknown option is given")
 	if "magnet" in options and "hash-file" in options:
 		error_exit(300, "specify either -m or -f but not both")
-		
+
 	sys.argv[1:] = args
 	main_options(options, (log, log_conf), th)
 
