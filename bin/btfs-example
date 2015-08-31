@@ -1,0 +1,15 @@
+#!/bin/sh
+
+MPOINT=${HOME}/btfs
+DLDIR=${HOME}/dl
+
+for i in ${MPOINT} ${DLDIR} ; do
+    if [ ! -d ${i} ]; then
+        mkdir -p ${i}
+    fi
+done
+
+# Magnet link from
+# http://www.linux23.com/torrent/linux-mint-5-beta-iso:c7a1a4ed9012eed09897e009778b69f2d977e516
+
+${HOME}/git/btfs/btfs.py -m "magnet:?xt=urn:btih:Y6Q2J3MQCLXNBGEX4AEXPC3J6LMXPZIW" -s ${DLDIR} ${MPOINT}
