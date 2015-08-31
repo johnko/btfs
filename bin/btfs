@@ -17,9 +17,7 @@ if ! id 1002 > /dev/null 2> /dev/null ; then
     pw groupmod operator -m btfs
 fi
 
-if [ ! -e ${PYSCRIPT} ]; then
-    cp ${HOME}/git/btfs/btfs.py ${PYSCRIPT}
-fi
+cp ${HOME}/git/btfs/btfs.py ${PYSCRIPT}
 
 for i in ${MPOINT} ${DLDIR} ; do
     if [ ! -d ${i} ]; then
