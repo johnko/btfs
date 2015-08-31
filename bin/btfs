@@ -1,0 +1,35 @@
+#!/bin/sh
+
+MPOINT=/usr/home/btfs/btfs
+DLDIR=/usr/home/btfs/dl
+PYSCRIPT=/usr/home/btfs/btfs.py
+
+
+if ! kldstat | grep fuse > /dev/null 2> /dev/null ; then
+    kldload fuse
+fi
+
+sysctl vfs.usermount=1 > /dev/null 2> /dev/null
+
+if ! id 1002 > /dev/null 2> /dev/null ; then
+    ### Add btfs user
+    echo "btfs:1002::::::/usr/home/btfs:/bin/csh:" | adduser -w no -f -
+    pw groupmod operator -m btfs
+fi
+
+if [ ! -e ${PYSCRIPT} ]; then
+    cp ${HOME}/git/btfs/btfs.py ${PYSCRIPT}
+fi
+
+for i in ${MPOINT} ${DLDIR} ; do
+    if [ ! -d ${i} ]; then
+        install -d -o btfs -m 750 ${i}
+    fi
+done
+
+# Magnet link from
+# http://www.linux23.com/torrent/linux-mint-5-beta-iso:c7a1a4ed9012eed09897e009778b69f2d977e516
+
+su -l btfs -c sh <<EOF
+${PYSCRIPT} -m "magnet:?xt=urn:btih:Y6Q2J3MQCLXNBGEX4AEXPC3J6LMXPZIW" -s ${DLDIR} ${MPOINT}
+EOF
