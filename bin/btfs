@@ -17,7 +17,7 @@ if ! id 1002 > /dev/null 2> /dev/null ; then
     pw groupmod operator -m btfs
 fi
 
-install -m 644 -o btfs ${HOME}/git/btfs/btfs.py ${PYSCRIPT}
+install -m 755 -o btfs ${HOME}/git/btfs/btfs.py ${PYSCRIPT}
 
 for i in ${MPOINT} ${DLDIR} ; do
     if [ ! -d ${i} ]; then
