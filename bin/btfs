@@ -30,6 +30,6 @@ done
 
 su -l btfs -c sh <<EOF
 ${PYSCRIPT} -d 0 -m "magnet:?xt=urn:btih:Y6Q2J3MQCLXNBGEX4AEXPC3J6LMXPZIW" -s ${DLDIR} ${MPOINT}
-cd ${MPOINT}
-csh
 EOF
+
+su -l btfs
