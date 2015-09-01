@@ -301,8 +301,8 @@ class BTFS(fuse.Fuse):
 				self.torrent_session.listen_on(self.options["port"], self.options["port"] + 100)
 
 				torrent_descr = {"storage_mode": libtorrent.storage_mode_t.storage_mode_allocate
-						 , "save_path": self.options["save-path"]
-						 }
+						, "save_path": self.options["save-path"]
+						}
 				if not (resume_data is None):
 					torrent_descr["resume_data"] = resume_data
 

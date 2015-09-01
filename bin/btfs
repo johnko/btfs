@@ -3,6 +3,7 @@
 MPOINT=/usr/home/btfs/btfs
 DLDIR=/usr/home/btfs/dl
 PYSCRIPT=/usr/home/btfs/btfs.py
+PYLOG=/usr/home/btfs/logging.conf
 
 
 if ! kldstat | grep fuse > /dev/null 2> /dev/null ; then
@@ -18,6 +19,7 @@ if ! id 1002 > /dev/null 2> /dev/null ; then
 fi
 
 install -m 755 -o btfs ${HOME}/git/btfs/btfs.py ${PYSCRIPT}
+install -m 644 -o btfs ${HOME}/git/btfs/logging.conf ${PYSCRIPT%/*}/logging.conf
 
 for i in ${MPOINT} ${DLDIR} ; do
     if [ ! -d ${i} ]; then
@@ -29,7 +31,12 @@ done
 # http://www.linux23.com/torrent/linux-mint-5-beta-iso:c7a1a4ed9012eed09897e009778b69f2d977e516
 
 su -l btfs -c sh <<EOF
-${PYSCRIPT} -d 0 -m "magnet:?xt=urn:btih:Y6Q2J3MQCLXNBGEX4AEXPC3J6LMXPZIW" -s ${DLDIR} ${MPOINT}
+${PYSCRIPT} \
+-m "magnet:?xt=urn:btih:Y6Q2J3MQCLXNBGEX4AEXPC3J6LMXPZIW" \
+-d 0 \
+--log-conf=${PYLOG} \
+-s ${DLDIR} \
+${MPOINT}
 EOF
 
 su -l btfs
